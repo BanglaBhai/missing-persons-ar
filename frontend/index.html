@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Missing Persons AR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/zingtouch/1.0.6/zingtouch.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        #ar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        #content-card { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background: rgba(0, 0, 0, 0.9); border-radius: 20px; padding: 20px; color: white; display: none; pointer-events: all; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); max-height: 80vh; overflow-y: auto; }
+        #content-card.visible { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+        .person-photo { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; }
+        .person-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #fff; }
+        .info-section { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+        .info-section:last-of-type { border-bottom: none; }
+        .info-label { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-value { font-size: 15px; line-height: 1.5; }
+        .urgent-tag { background: #e74c3c; color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .nav-controls { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px 0; gap: 10px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.3); color: white; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s; flex: 1; }
+        .nav-btn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.95); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .action-btn { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 15px; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .action-btn.share { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .action-btn:active { transform: scale(0.95); }
+        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; background: rgba(0, 0, 0, 0.8); padding: 30px; border-radius: 15px; z-index: 100; }
+        .spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-top: 3px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #instructions { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 15px 25px; border-radius: 25px; font-size: 14px; z-index: 5; text-align: center; max-width: 90%; }
+        .swipe-indicator { font-size: 12px; color: #aaa; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="loading"><div class="spinner"></div><p>Loading AR Experience...</p></div>
+    <div id="instructions">Point camera at the marker to begin</div>
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; precision: medium;">
+        <a-entity camera></a-entity>
+        <a-marker preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01">
+            <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" opacity="0"></a-plane>
+        </a-marker>
+    </a-scene>
+    <div id="ar-overlay">
+        <div id="content-card">
+            <span class="urgent-tag">MISSING PERSON</span>
+            <img id="person-photo" class="person-photo" src="" alt="Missing Person Photo">
+            <h2 id="person-name" class="person-name"></h2>
+            <div class="info-section"><div class="info-label">Physical Description</div><div id="person-description" class="info-value"></div></div>
+            <div class="info-section"><div class="info-label">Last Seen</div><div id="last-seen" class="info-value"></div></div>
+            <div class="info-section"><div class="info-label">Circumstances</div><div id="circumstances" class="info-value"></div></div>
+            <div class="info-section"><div class="info-label">If You Have Information</div><div id="contact-info" class="info-value"></div></div>
+            <div class="nav-controls">
+                <button id="prev-btn" class="nav-btn">← Previous</button>
+                <span id="counter" style="color: #aaa; font-size: 13px;">1 / 1</span>
+                <button id="next-btn" class="nav-btn">Next →</button>
+            </div>
+            <div class="swipe-indicator">Swipe left/right to browse</div>
+            <div class="action-buttons">
+                <button id="download-btn" class="action-btn">📥 Download Flyer</button>
+                <button id="share-btn" class="action-btn share">📤 Share</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+        let personsData = [];
+        let currentIndex = 0;
+        let isTracking = false;
+        const loading = document.getElementById('loading');
+        const instructions = document.getElementById('instructions');
+        const contentCard = document.getElementById('content-card');
+        const personPhoto = document.getElementById('person-photo');
+        const personName = document.getElementById('person-name');
+        const personDescription = document.getElementById('person-description');
+        const lastSeen = document.getElementById('last-seen');
+        const circumstances = document.getElementById('circumstances');
+        const contactInfo = document.getElementById('contact-info');
+        const counter = document.getElementById('counter');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const shareBtn = document.getElementById('share-btn');
+
+        async function fetchPersonsData() {
+            try {
+                console.log('Fetching data from:', API_BASE_URL);
+                const response = await fetch(API_BASE_URL + '/persons/?ordering=-upload_date');
+                if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
+                const data = await response.json();
+                personsData = data.results || data;
+                console.log('Loaded persons:', personsData.length);
+                if (personsData.length > 0) {
+                    displayPerson(0);
+                    updateNavButtons();
+                } else {
+                    alert('No missing persons data available. Please add records through the admin panel.');
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Failed to load data. Make sure backend is running at ' + API_BASE_URL);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayPerson(index) {
+            if (index < 0 || index >= personsData.length) return;
+            const person = personsData[index];
+            currentIndex = index;
+            personPhoto.src = person.photo_url || '';
+            personName.textContent = person.name;
+            personDescription.textContent = person.physical_description || person.gender + ', ' + person.age + ' years old';
+            lastSeen.innerHTML = '<strong>Date:</strong> ' + new Date(person.last_seen_date).toLocaleDateString() + '<br><strong>Location:</strong> ' + person.last_seen_location;
+            circumstances.textContent = person.circumstances;
+            contactInfo.innerHTML = '<strong>Contact:</strong> ' + person.contact_name + '<br><strong>Phone:</strong> ' + person.contact_phone + (person.contact_email ? '<br><strong>Email:</strong> ' + person.contact_email : '') + (person.police_case_number ? '<br><strong>Case:</strong> ' + person.police_case_number : '');
+            counter.textContent = (index + 1) + ' / ' + personsData.length;
+            updateNavButtons();
+        }
+
+        function updateNavButtons() {
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === personsData.length - 1;
+        }
+
+        prevBtn.addEventListener('click', function() {
+            if (currentIndex > 0) displayPerson(currentIndex - 1);
+        });
+
+        nextBtn.addEventListener('click', function() {
+            if (currentIndex < personsData.length - 1) displayPerson(currentIndex + 1);
+        });
+
+        downloadBtn.addEventListener('click', async function() {
+            const person = personsData[currentIndex];
+            if (!person.flyer_url) {
+                alert('No flyer available. The flyer is auto-generated when you save a record with a photo in admin panel.');
+                return;
+            }
+            try {
+                console.log('Downloading flyer from:', person.flyer_url);
+                window.open(person.flyer_url, '_blank');
+                const link = document.createElement('a');
+                link.href = person.flyer_url;
+                link.download = person.name.replace(/\s+/g, '_') + '_flyer.png';
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Download error:', error);
+                window.open(person.flyer_url, '_blank');
+            }
+        });
+
+        shareBtn.addEventListener('click', async function() {
+            const person = personsData[currentIndex];
+            const shareData = {
+                title: 'Help Find ' + person.name,
+                text: person.name + ' has been missing since ' + new Date(person.last_seen_date).toLocaleDateString() + '. Last seen in ' + person.last_seen_location + '. Contact: ' + person.contact_phone,
+                url: window.location.href
+            };
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    await navigator.clipboard.writeText(shareData.text + '\n' + shareData.url);
+                    alert('Information copied to clipboard!');
+                }
+            } catch (error) {
+                console.error('Share error:', error);
+            }
+        });
+
+        const contentCardElement = document.getElementById('content-card');
+        const zingTouch = new ZingTouch.Region(contentCardElement);
+        zingTouch.bind(contentCardElement, 'swipe', function(event) {
+            const direction = event.detail.data[0].currentDirection;
+            if (direction > 0 && direction < 90 && currentIndex > 0) {
+                displayPerson(currentIndex - 1);
+            } else if (direction > 180 && direction < 270 && currentIndex < personsData.length - 1) {
+                displayPerson(currentIndex + 1);
+            }
+        });
+
+        AFRAME.registerComponent('marker-handler', {
+            init: function() {
+                const marker = this.el;
+                marker.addEventListener('markerFound', function() {
+                    console.log('Marker detected!');
+                    isTracking = true;
+                    instructions.style.display = 'none';
+                    contentCard.classList.add('visible');
+                });
+                marker.addEventListener('markerLost', function() {
+                    console.log('Marker lost!');
+                    isTracking = false;
+                    instructions.style.display = 'block';
+                    contentCard.classList.remove('visible');
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const markers = document.querySelectorAll('a-marker');
+            markers.forEach(function(marker) {
+                marker.setAttribute('marker-handler', '');
+            });
+        });
+
+        fetchPersonsData();
+    </script>
+</body>
+</html>
