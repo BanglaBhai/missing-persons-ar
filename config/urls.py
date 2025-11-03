@@ -5,12 +5,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path("admin/", admin.site.urls),                      # ✅ Django admin
-    path("api/", include("missing_persons.urls")),        # ✅ Your app API
+    path("admin/", admin.site.urls),                 # ✅ Admin
+    path("api/", include("missing_persons.urls")),   # ✅ Your API
 ]
 
-# Optional: serve media files (for demo)
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# (OK for demo on Render so image fields work)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
