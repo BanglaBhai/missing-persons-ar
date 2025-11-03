@@ -34,6 +34,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+APPEND_SLASH = True  # ✅ makes /admin redirect to /admin/
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -111,4 +113,5 @@ JAZZMIN_SETTINGS = {
         "auth.Group": "fas fa-users",
         "missing_persons.MissingPerson": "fas fa-user-slash",
     },
+
 }
