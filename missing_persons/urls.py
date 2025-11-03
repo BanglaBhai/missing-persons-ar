@@ -1,10 +1,8 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import MissingPersonViewSet
-
-router = DefaultRouter()
-router.register(r'persons', MissingPersonViewSet, basename='missing-person')
+# missing_persons/urls.py
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Example placeholder endpoint so /api/ is valid
+    # path("persons/", views.PersonList.as_view()),
 ]
