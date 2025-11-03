@@ -1,17 +1,17 @@
 # config/urls.py
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Optional branding (won't affect routing)
-admin.site.site_header = "Missing Persons Admin"
-admin.site.site_title = "Missing Persons Admin"
-admin.site.index_title = "Dashboard"
+def root_ping(_request):
+    return HttpResponse("OK: root handler is alive")
 
 urlpatterns = [
-    path("admin/", admin.site.urls),                 # ✅ Admin
-    path("api/", include("missing_persons.urls")),   # ✅ App API
+    path("", root_ping),                         # ✅ GET /
+    path("admin/", admin.site.urls),             # ✅ GET /admin/
+    path("api/", include("missing_persons.urls"))# ✅ GET /api/health/
 ]
 
 # Serve media (fine for demo on Render)
