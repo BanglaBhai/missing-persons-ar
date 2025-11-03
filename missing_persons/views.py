@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import MissingPerson
 from .serializers import MissingPersonSerializer
+from django.http import JsonResponse
 
 
 class MissingPersonViewSet(viewsets.ReadOnlyModelViewSet):
@@ -38,4 +39,8 @@ class MissingPersonViewSet(viewsets.ReadOnlyModelViewSet):
             },
             'last_updated': queryset.first().last_updated if total_count > 0 else None,
         }
+
         return Response(stats)
+
+    def health(_request):
+        return JsonResponse({"status": "ok"})
