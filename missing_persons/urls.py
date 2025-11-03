@@ -1,8 +1,10 @@
 # missing_persons/urls.py
 from django.urls import path
-from . import views
+from django.http import JsonResponse
+
+def health(_request):
+    return JsonResponse({"status": "ok"})
 
 urlpatterns = [
-    # Example placeholder endpoint so /api/ is valid
-    # path("persons/", views.PersonList.as_view()),
+    path("health/", health),   # GET /api/health/ returns {"status":"ok"}
 ]
